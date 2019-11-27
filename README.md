@@ -252,7 +252,7 @@ Ensure the following:
      <traefik_network_name>:
        external: true
        name: <traefik_network_name>
-  ```
+   ```
 
 **Services That Will Require Persistent Storage (via GlusterFS)**
 
