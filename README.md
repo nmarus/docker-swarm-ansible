@@ -1,12 +1,12 @@
-# Docker Cluster with GlsuterFS, Traefik, and Portainer
+# Docker Cluster with GlusterFS, Traefik, and Portainer
 
-The goal of this repo is to demonstrate using Ansible to build out Docker Swarm architecture that can be used to simply and reliably deploy and manage container workloads. This setup is intended for a small Development Lab and to get familiar with how high availability, scaling, and routing works with Docker. This can be scaled to use in production and there are some notes at the end of this README that will point you in the right direction if you desrire to do so.
+The goal of this repo is to demonstrate using Ansible to build out Docker Swarm architecture that can be used to simply and reliably deploy and manage container workloads. This setup is intended for a small Development Lab and to get familiar with how high availability, scaling, and routing works with Docker. This can be scaled to use in production and there are some notes at the end of this README that will point you in the right direction if you desire to do so.
 
 This setup will provide a 3 node Docker Swarm with Layer 7 routing, Web UI management, and a distributed file system for Container volumes.
 
 ### Deployment Requirements
 
-This makes use of Ansible to automate the deployment of this setup. To run the Ansible commands, your workstaion should have the Ansible CLI utilities installed.
+This makes use of Ansible to automate the deployment of this setup. To run the Ansible commands, your workstation should have the Ansible CLI utilities installed.
 
 ### Host Requirements (Default setup)
 
@@ -31,7 +31,7 @@ Containers, nuff said.
 Gluster is a Distributed Filesystem to allow shared persistent storage volumes across Docker Swarm Cluster. This is used as an alternative to NFS or other shared storage technologies for simplicity and minimal hardware footprint. This example will install the Gluster Storage Plugin for Docker.
 
 #### Traefik
-Traefik is a Layer 7 Router that automatically discovers services in Docker Swarm and routes traffic to the appropriate container(s) in the cluster. Similar to the functionality provided by Docker EE UCP with Interlock. The nice thing about Traefik is that it integrates into the Docker Swarm API and will dynamically create the Layer 7 routes based on labels you add to you containers or services. There is no administrative action in traefik itself.
+Traefik is a Layer 7 Router that automatically discovers services in Docker Swarm and routes traffic to the appropriate container(s) in the cluster. Similar to the functionality provided by Docker EE UCP with Interlock. The nice thing about Traefik is that it integrates into the Docker Swarm API and will dynamically create the Layer 7 routes based on labels you add to you containers or services. There is no administrative action in Traefik itself.
 
 #### Portainer
 Portainer is a web UI for managing Docker Swarm. Functionality is similar to Docker EE UCP but provides more features and is an open source project.
@@ -43,7 +43,7 @@ The following high level actions are performed by the Ansible script:
 * Updates hosts packages
 * Installs required dependencies
 * Installs Docker CE on each node
-* Sets up ansible user to have permission to run Docker without sudo access
+* Sets up Ansible user to have permission to run Docker without sudo access
 * The first node defined in `[swarm_managers]` is setup as the leader in the Swarm Cluster
 * The remaining nodes are setup as Swarm Managers (3 required for clustering, ie 1 Leader, 2 managers)
 * If `[swarm_workers]` is defined, joins these to the Swarm Cluster with the Worker role
@@ -75,7 +75,7 @@ Each of the deployed applications must resolve to 1 or more of the Hosts running
 
 1. DNS - If you a local DNS server, or are deploying into a public cloud, create a DNS entry that points to the Hosts.
 
-2. Local Dev via Hosts File - If you are testing on a local network or in a dev enviroment, it may be easier to simply modify your hosts file. Example entries below will match the default names defined in the variables of the ansible hosts file.
+2. Local Dev via Hosts File - If you are testing on a local network or in a dev environment, it may be easier to simply modify your hosts file. Example entries below will match the default names defined in the variables of the Ansible hosts file.
 
 **Example Entries in local Hosts File:**
 
@@ -87,7 +87,7 @@ Each of the deployed applications must resolve to 1 or more of the Hosts running
 
 ## Test Connectivity to Hosts
 
-This should return ok and ensure that ansible config is able to login and execute commands on the hosts.
+This should return ok and ensure that Ansible config is able to login and execute commands on the hosts.
 
 ```bash
 ansible all -a "/bin/echo hello"
@@ -103,13 +103,13 @@ ansible-playbook playbooks/install.yml
 
 ## Test Connectivity to Traefik
 
-If using the default ansible variables defined in the hosts file, you can navigate to:
+If using the default Ansible variables defined in the hosts file, you can navigate to:
 
 * http://traefik.docker.local
 
 ## Test Connectivity to Portainer
 
-If using the default ansible variables defined in the hosts file, you can navigate to:
+If using the default Ansible variables defined in the hosts file, you can navigate to:
 
 * http://portainer.docker.local
 
@@ -117,7 +117,7 @@ If using the default ansible variables defined in the hosts file, you can naviga
 
 **wordpress-stack.yml**
 
-_Note: This assumes that you are using the default ansible variables in the hosts file._
+_Note: This assumes that you are using the default Ansible variables in the hosts file._
 
 ```yaml
 version: '3.5'
@@ -204,7 +204,7 @@ _Note: This may take a few minutes to respond after creating stack due to docker
 
 **Services That Will Require a Eternal Web Route (Layer 7 via Traefik)**
 
-_Note: For a full example reference wordpress config above._
+_Note: For a full example reference Wordpress config above._
 
 Ensure the following:
 
@@ -256,7 +256,7 @@ Ensure the following:
 
 **Services That Will Require Persistent Storage (via GlusterFS)**
 
-_Note: For a full example reference wordpress config above._
+_Note: For a full example reference Wordpress config above._
 
 Ensure the following:
 
@@ -283,7 +283,7 @@ Ensure the following:
          - <volume_name>:<container_path>
    ```
 
-3. The volume dir path has been created on in gluster volume.
+3. The volume dir path has been created on in Gluster volume.
 
    Example:
 
@@ -299,11 +299,11 @@ Look to the playbooks for `upgrade-docker`, `upgrade-packages`, and `redeploy-ap
 
 ## Semi Production Setup
 
-If deploying this public cloud, or are looking for a more robust infrastruture, you will probably want to increase the total number of nodes, make use of a load balancer, and implement SSL. This is not a complete guide on how to do this, but offers some initial recommendation in where to start. When referncing Public Cloud below, this will imply Amazon Web Services, however, this can also be applied to a hybrid (on premise data center) or other cloud provider with minor changes.
+If deploying this public cloud, or are looking for a more robust infrastruture, you will probably want to increase the total number of nodes, make use of a load balancer, and implement SSL. This is not a complete guide on how to do this, but offers some initial recommendation in where to start. When referencing Public Cloud below, this will imply Amazon Web Services, however, this can also be applied to a hybrid (on premise data center) or other cloud provider with minor changes.
 
 **Ansible Modifications**
 
-When deploying this to public cloud and/or in an environment with DNS, you will want to switch out the inventory from using ip address to using host names. Additionally, you will probaly want to not use a username / password method of connecting over SSH and should rather use SSH keys.
+When deploying this to public cloud and/or in an environment with DNS, you will want to switch out the inventory from using ip address to using host names. Additionally, you will probably want to not use a username / password method of connecting over SSH and should rather use SSH keys.
 
 For the DNS name modifications, change the entries in the hosts file to use those names. These names MUST also be resolvable from each host internally. For example if you can access hosts at myhost1.mycorp.net, myhost2.mycorp.net, etc. Each of those hosts internally should also be able to access the other hosts by the same DNS name.
 
@@ -317,7 +317,7 @@ In addition to this, you want to make sure that the user can run `sudo` without 
 
 **Load Balancer and SSL**
 
-While Traefik can be configure to do SSL offloading, I find the better approach is to make use of a AWS Application Load Balancer (ALB). The advantages to this is that it can do the SSL offloading, as well as distribute traffic between each of you traefik router nodes.
+While Traefik can be configure to do SSL offloading, I find the better approach is to make use of a AWS Application Load Balancer (ALB). The advantages to this is that it can do the SSL offloading, as well as distribute traffic between each of you Traefik router nodes.
 
 For each domain you wish to host Docker applications under:
 
@@ -355,6 +355,6 @@ To do this you can modify the Ansible hosts file. For example, to split out Glus
 
 While Gluster is a good way to have a distributed filesystem for use with Swarm, if you are deploying on a Cloud provider, it would be advisable to use another volume storage Driver. What you choose for this will depend on performace, cost, and complexity requirements. Amazons EFS (NFS) is one of many ways to accomplish this.
 
-For high traffic sites, you will also want to break out the traefic router to run on dedicated hosts. This is out of the scope of this Ansible playbook, but should be fairly easy to modify. One config setup would be to setup 2 dedicated Swarm Workers and deploy traefik services there only. However, to keep other workloads off these workers, or to make sure traefik services are only assigned here, you will have to make use of docker labels and constraints.
+For high traffic sites, you will also want to break out the traefic router to run on dedicated hosts. This is out of the scope of this Ansible playbook, but should be fairly easy to modify. One config setup would be to setup 2 dedicated Swarm Workers and deploy Traefik services there only. However, to keep other workloads off these workers, or to make sure Traefik services are only assigned here, you will have to make use of Docker labels and constraints.
 
-If running in a environment where you do not have access to inherent SSL offloading and load balancing that is provided from servies like AWS ALB, you could make use of a setup that implements HAProxy as an alternative. HAProxy will loadbalance and provide SSL offloading. Traefik does have this capability as well as integrations for LetsEncrypt SSL certs (good service if you want free SSL) however, you would still have to load balance between each of your traefik nodes (assuming you want more than one). Note that if you go down the traefik route with LetsEncrypt, you will need to also implement a shared key store between the nodes (i.e. Consul).
+If running in a environment where you do not have access to inherent SSL offloading and load balancing that is provided from servies like AWS ALB, you could make use of a setup that implements HAProxy as an alternative. HAProxy will loadbalance and provide SSL offloading. Traefik does have this capability as well as integrations for LetsEncrypt SSL certs (good service if you want free SSL) however, you would still have to load balance between each of your Traefik nodes (assuming you want more than one). Note that if you go down the Traefik route with LetsEncrypt, you will need to also implement a shared key store between the nodes (i.e. Consul).
