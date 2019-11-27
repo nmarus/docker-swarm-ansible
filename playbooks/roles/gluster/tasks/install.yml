@@ -1,0 +1,22 @@
+---
+- name: Install Gluster and dependencies
+  become: true
+  become_method: sudo
+  apt:
+    pkg:
+      - xfsprogs
+      - attr
+      - glusterfs-server
+      - glusterfs-common
+      - glusterfs-client
+    state: present
+    force_apt_get: true
+    update_cache: yes
+
+- name: Enable Gluster service
+  become: true
+  become_method: sudo
+  systemd:
+    name: glusterd
+    enabled: yes
+    state: started

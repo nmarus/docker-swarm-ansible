@@ -1,0 +1,5 @@
+---
+- hosts: swarm_managers
+  roles:
+    - traefik
+    - portainer

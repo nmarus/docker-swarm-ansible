@@ -1,0 +1,3 @@
+---
+- import_tasks: docker.yml
+- import_tasks: plugins.yml

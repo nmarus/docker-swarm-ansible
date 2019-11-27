@@ -1,0 +1,3 @@
+---
+- import_tasks: leader.yml
+- import_tasks: manager.yml

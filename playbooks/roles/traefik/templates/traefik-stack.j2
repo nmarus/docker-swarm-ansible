@@ -1,0 +1,36 @@
+version: '3.5'
+
+services:
+  reverse-proxy:
+    image: traefik:v2.0
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker"
+      - "--providers.docker.swarmMode=true"
+      - "--entrypoints.web.address=:{{traefik_listen_port}}"
+      - "--providers.docker.exposedByDefault=false"
+    ports:
+      - "{{traefik_listen_port}}:{{traefik_listen_port}}"
+      - "{{traefik_admin_port}}:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - {{traefik_network_name}}
+    deploy:
+      labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`{{traefik_admin_url}}`)"
+      - "traefik.http.routers.api.service=api@internal"
+      - "traefik.http.routers.api.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.users={{traefikpassword.stdout}}"
+      # Dummy service for Swarm port detection. The port can be any valid integer value.
+      - "traefik.http.services.dummy-svc.loadbalancer.server.port=9999"
+      mode: global
+      placement:
+        constraints: [node.role == manager]
+
+networks:
+  {{traefik_network_name}}:
+    driver: overlay
+    attachable: true
+    name: {{traefik_network_name}}

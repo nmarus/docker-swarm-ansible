@@ -1,0 +1,27 @@
+---
+- name: Update Docker
+  become: true
+  become_method: sudo
+  apt:
+    pkg:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: latest
+    force_apt_get: true
+    update_cache: yes
+
+- name: Reboot host(s) after Docker install
+  shell: sleep 2 && /sbin/shutdown -r now "ansible reboot request"
+  async: 1
+  poll: 0
+  ignore_errors: true
+  become: true
+  become_method: sudo
+  when: inventory_hostname != "127.0.0.1" and inventory_hostname != "localhost"
+
+- name: Waiting for host(s) to reboot
+  local_action: "wait_for host={{inventory_hostname}} port=22 state=started delay=60"
+  become: false
+  ignore_errors: true
+  when: inventory_hostname != "127.0.0.1" and inventory_hostname != "localhost"

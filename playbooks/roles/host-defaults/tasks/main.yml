@@ -1,0 +1,59 @@
+---
+- name: Check if auto update is enabled
+  stat:
+    path: /etc/apt/apt.conf.d/20auto-upgrades
+  register: autoupdate
+
+- name: Disable auto update
+  when: autoupdate.stat.exists
+  become: true
+  become_method: sudo
+  file:
+    path: /etc/apt/apt.conf.d/20auto-upgrades
+    state: absent
+
+- name: Wait for any possibly running unattended upgrade to finish
+  when: autoupdate.stat.exists
+  become: true
+  become_method: sudo
+  raw: systemd-run --property="After=apt-daily.service apt-daily-upgrade.service" --wait /bin/true
+
+- name: Reboot host(s) after disabling auto update
+  shell: sleep 2 && /sbin/shutdown -r now "ansible reboot request"
+  async: 1
+  poll: 0
+  ignore_errors: true
+  become: true
+  become_method: sudo
+  when: autoupdate.stat.exists and inventory_hostname != "127.0.0.1" and inventory_hostname != "localhost"
+
+- name: Waiting for host(s) to reboot
+  local_action: "wait_for host={{inventory_hostname}} port=22 state=started delay=60"
+  become: false
+  ignore_errors: true
+  when: autoupdate.stat.exists and inventory_hostname != "127.0.0.1" and inventory_hostname != "localhost"
+
+# - name: Upgrade all packages to the latest version
+#   become: true
+#   become_method: sudo
+#   apt:
+#     name: "*"
+#     state: latest
+#     force_apt_get: true
+#     update_cache: yes
+
+- name: Verify system dependencies
+  become: true
+  become_method: sudo
+  apt:
+    pkg:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg-agent
+      - software-properties-common
+      - python-pip
+      - apache2-utils
+    state: present
+    force_apt_get: true
+    update_cache: yes

@@ -1,0 +1,8 @@
+---
+- hosts: swarm_managers
+  roles:
+    - upgrade-docker
+
+- hosts: swarm_workers
+  roles:
+    - upgrade-docker

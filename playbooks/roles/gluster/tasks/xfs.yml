@@ -1,0 +1,23 @@
+---
+- name: Create XFS Path {{gluster_volume_path}}/{{inventory_hostname}}
+  become: true
+  become_method: sudo
+  file:
+    path: "{{gluster_volume_path}}/{{inventory_hostname}}"
+    state: directory
+
+- name: Create a XFS filesystem on {{gluster_dev}}
+  become: true
+  become_method: sudo
+  filesystem:
+    fstype: xfs
+    dev: "{{gluster_dev}}"
+
+- name: Mount XFS volume {{gluster_dev}} to {{gluster_volume_path}}/{{inventory_hostname}}
+  become: true
+  become_method: sudo
+  mount:
+    path: "{{gluster_volume_path}}/{{inventory_hostname}}"
+    src: "{{gluster_dev}}"
+    fstype: xfs
+    state: mounted
