@@ -1,4 +1,4 @@
-# Docker Cluster with GlusterFS, Traefik, and Portainer
+# Docker Swarm with GlusterFS, Traefik, and Portainer
 
 The goal of this repo is to demonstrate using Ansible to build out Docker Swarm architecture that can be used to simply and reliably deploy and manage container workloads. This setup is intended for a small Development Lab and to get familiar with how high availability, scaling, and routing works with Docker. This can be scaled to use in production and there are some notes at the end of this README that will point you in the right direction if you desire to do so.
 
