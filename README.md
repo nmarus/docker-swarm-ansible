@@ -372,7 +372,7 @@ Note this setup also implements a HAProxy as a loadbalancer to distribute traffi
 
 Additionally, HAProxy exposes a stats page that is accessible at:
 
-http://10.10.10.10.10/stats
+http://10.10.10.10/stats
 
 To shut down the infrastructure in Vagrant run:
 
