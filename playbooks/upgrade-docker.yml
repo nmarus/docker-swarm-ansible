@@ -1,8 +1,12 @@
 ---
 - hosts: swarm_managers
-  roles:
-    - upgrade-docker
+  tasks:
+    - include_vars: "{{playbook_dir}}/config.yml"
+    - import_role:
+        name: upgrade-docker
 
 - hosts: swarm_workers
-  roles:
-    - upgrade-docker
+  tasks:
+    - include_vars: "{{playbook_dir}}/config.yml"
+    - import_role:
+        name: upgrade-docker

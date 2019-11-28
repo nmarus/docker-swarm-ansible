@@ -1,23 +1,42 @@
 ---
 - hosts: all
-  roles:
-    - host-defaults
+  tasks:
+    - include_vars: "{{playbook_dir}}/config.yml"
+    - import_role:
+        name: host-defaults
 
 - hosts: swarm_managers
-  roles:
-    - docker
-    - swarm-managers
+  tasks:
+    - include_vars: "{{playbook_dir}}/config.yml"
+    - import_role:
+        name: docker
+    - import_role:
+        name: swarm-managers
 
 - hosts: swarm_workers
-  roles:
-    - docker
-    - swarm-workers
+  tasks:
+    - include_vars: "{{playbook_dir}}/config.yml"
+    - import_role:
+        name: docker
+    - import_role:
+        name: swarm-workers
 
 - hosts: gluster_nodes
-  roles:
-    - gluster
+  tasks:
+    - include_vars: "{{playbook_dir}}/config.yml"
+    - import_role:
+        name: gluster
 
 - hosts: swarm_managers
-  roles:
-    - traefik
-    - portainer
+  tasks:
+    - include_vars: "{{playbook_dir}}/config.yml"
+    - import_role:
+        name: traefik
+    - import_role:
+        name: portainer
+
+- hosts: haproxy
+  tasks:
+    - include_vars: "{{playbook_dir}}/config.yml"
+    - import_role:
+        name: haproxy

@@ -1,0 +1,26 @@
+---
+- name: Install HAProxy
+  become: true
+  become_method: sudo
+  apt:
+    pkg:
+      - haproxy
+    state: latest
+    force_apt_get: true
+    update_cache: yes
+
+- name: Create HAProxy config file
+  become: true
+  become_method: sudo
+  template:
+    src: haproxy.j2
+    dest: /etc/haproxy/haproxy.cfg
+    mode: 0775
+
+- name: Restart HAProxy service
+  become: true
+  become_method: sudo
+  systemd:
+    name: haproxy
+    enabled: yes
+    state: restarted

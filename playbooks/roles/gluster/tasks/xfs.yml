@@ -6,18 +6,18 @@
     path: "{{gluster_volume_path}}/{{inventory_hostname}}"
     state: directory
 
-- name: Create a XFS filesystem on {{gluster_dev}}
+- name: Create a XFS filesystem on {{device2_hdd_dev}}
   become: true
   become_method: sudo
   filesystem:
     fstype: xfs
-    dev: "{{gluster_dev}}"
+    dev: "{{device2_hdd_dev}}"
 
-- name: Mount XFS volume {{gluster_dev}} to {{gluster_volume_path}}/{{inventory_hostname}}
+- name: Mount XFS volume {{device2_hdd_dev}} to {{gluster_volume_path}}/{{inventory_hostname}}
   become: true
   become_method: sudo
   mount:
     path: "{{gluster_volume_path}}/{{inventory_hostname}}"
-    src: "{{gluster_dev}}"
+    src: "{{device2_hdd_dev}}"
     fstype: xfs
     state: mounted

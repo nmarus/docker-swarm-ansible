@@ -1,0 +1,20 @@
+---
+gluster_volume_path: /glusterfs/bricks
+gluster_volume_name: gfs
+gluster_mount_path: /mnt/gfs
+portainer_admin_port: 9000
+portainer_tunnel_port: 8000
+portainer_gfs_subdir: portainer
+portainer_network_name: portainer_agent_network
+portainer_volume_name: portainer_data
+portainer_admin_url: portainer.docker.local
+portainer_admin_password: password1234
+portainer_agent_secret: mysecrettoken
+traefik_listen_port: 80
+traefik_admin_port: 8080
+traefik_network_name: web
+traefik_admin_url: traefik.docker.local
+traefik_admin_user: admin
+traefik_admin_password: password1234
+haproxy_stats_user: admin
+haproxy_stats_password: password1234

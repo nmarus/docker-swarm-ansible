@@ -59,12 +59,12 @@ The following high level actions are performed by the Ansible script:
 
 ### Ansible
 
-All customizations are found in the Ansible Inventory that is defined in the `hosts` file for this project. Change the hosts / IPs addresses for the 3 nodes and this setup works as is.
+All customizations are found in the Ansible Inventory that is defined in the `hosts` and `config.yml` files for this project. Change the hosts / IPs addresses for the 3 nodes and this setup works as is.
 
 Notes about inventory file (hosts):
 
 * `[swarm_managers]` group in hosts MUST define at minimum 3 Nodes
-* `[swarm_workers]` group in hosts is optional and can include any number of none Manager Nodes
+* `[swarm_workers]` group in hosts is optional and can include any number of non Manager Nodes
 * `[gluster_nodes]` group in host MUST define ONLY 3 Nodes
 
 ### DNS
@@ -80,9 +80,9 @@ Each of the deployed applications must resolve to 1 or more of the Hosts running
 **Example Entries in local Hosts File:**
 
 ```
-192.168.46.10 portainer.docker.local
-192.168.46.10 traefik.docker.local
-192.168.46.10 wordpress.docker.local
+10.10.10.10 portainer.docker.local
+10.10.10.10 traefik.docker.local
+10.10.10.10 wordpress.docker.local
 ```
 
 ## Test Connectivity to Hosts
@@ -299,7 +299,7 @@ Look to the playbooks for `upgrade-docker`, `upgrade-packages`, and `redeploy-ap
 
 ## Semi Production Setup
 
-If deploying this public cloud, or are looking for a more robust infrastruture, you will probably want to increase the total number of nodes, make use of a load balancer, and implement SSL. This is not a complete guide on how to do this, but offers some initial recommendation in where to start. When referencing Public Cloud below, this will imply Amazon Web Services, however, this can also be applied to a hybrid (on premise data center) or other cloud provider with minor changes.
+If deploying this public cloud, or are looking for a more robust infrastruture, you will probably want to increase the total number of nodes, make use of a load balancer, and implement SSL. This is not a complete guide on how to do this, but offers some initial insights on where to start. When referencing Public Cloud below, this will refer to Amazon Web Services, however this can also be applied to a hybrid (on premise data center) or other cloud provider with minor changes.
 
 **Ansible Modifications**
 
@@ -317,13 +317,13 @@ In addition to this, you want to make sure that the user can run `sudo` without 
 
 **Load Balancer and SSL**
 
-While Traefik can be configure to do SSL offloading, I find the better approach is to make use of a AWS Application Load Balancer (ALB). The advantages to this is that it can do the SSL offloading, as well as distribute traffic between each of you Traefik router nodes.
+While Traefik can be configured to do SSL offloading, often a better better approach is to make use of an AWS Application Load Balancer (ALB). The advantages to this is that it can do the SSL offloading as well as distribute traffic between each of your Traefik router nodes.
 
 For each domain you wish to host Docker applications under:
 
 1. Create a AWS Route 53 DNS domain and assign it as the name server from your domain registrar.
 2. Create a AWS ALB and specify each one of your Traefik Nodes (Docker Managers) as targets.
-3. Apply Healthchecks to the ALB so that it can determin if a specific host is up or down.
+3. Apply Healthchecks to the ALB so that it can determine if a specific host is up or down.
 4. Add your SSL cert (or optionally a wildcard cert if hosting multiple apps on the same domain) to the ALB
 4. In your Route 53 DNS Domain, create DNS CNAME records to point the application(s) name to you ALB. (i.e `www.mydomain.com`, `file.mydomain.com`)
 5. Alternatively, if you are hosting all your applications for a domain in Docker Swarm you can create a DNS CNAME wildcard record (i.e. `*.mydomain.com`) and point that at your ALB. The advantage to this is that you will not need to create individual Route 53 records each time you add a new application. However, this assumes that all application records are under the same domain.
@@ -336,25 +336,52 @@ To do this you can modify the Ansible hosts file. For example, to split out Glus
 
 ```
 [swarm_managers]
-192.168.46.10
-192.168.46.11
-192.168.46.12
+10.10.10.10
+10.10.10.20
+10.10.10.30
 
 [swarm_workers]
-192.168.46.13
-192.168.46.14
-192.168.46.15
+10.10.10.40
+10.10.10.50
+10.10.10.60
 
 [gluster_nodes]
-192.168.46.16
-192.168.46.17
-192.168.46.18
+10.10.10.70
+10.10.10.80
+10.10.10.90
 ```
 
 **Other Considerations**
 
-While Gluster is a good way to have a distributed filesystem for use with Swarm, if you are deploying on a Cloud provider, it would be advisable to use another volume storage Driver. What you choose for this will depend on performace, cost, and complexity requirements. Amazons EFS (NFS) is one of many ways to accomplish this.
+While Gluster is a good way to have a distributed filesystem for use with Swarm, if you are deploying on a Cloud provider, it would be advisable to use another volume storage Driver. What you choose for this will depend on performance, cost, and complexity requirements. Amazons EFS (NFS) is one of many ways to accomplish this.
 
-For high traffic sites, you will also want to break out the traefic router to run on dedicated hosts. This is out of the scope of this Ansible playbook, but should be fairly easy to modify. One config setup would be to setup 2 dedicated Swarm Workers and deploy Traefik services there only. However, to keep other workloads off these workers, or to make sure Traefik services are only assigned here, you will have to make use of Docker labels and constraints.
+For high traffic sites, you will also want to break out the Traefic router to run on dedicated hosts. This is out of the scope of this Ansible playbook, but should be fairly easy to modify. An option would be to setup 2 dedicated Swarm Workers and deploy Traefik services only to those. However, to keep other workloads off these workers, or to make sure Traefik services are only assigned here, you will have to make use of Docker labels and constraints.
 
-If running in a environment where you do not have access to inherent SSL offloading and load balancing that is provided from servies like AWS ALB, you could make use of a setup that implements HAProxy as an alternative. HAProxy will loadbalance and provide SSL offloading. Traefik does have this capability as well as integrations for LetsEncrypt SSL certs (good service if you want free SSL) however, you would still have to load balance between each of your Traefik nodes (assuming you want more than one). Note that if you go down the Traefik route with LetsEncrypt, you will need to also implement a shared key store between the nodes (i.e. Consul).
+If running in environments where you do not have access to inherent SSL offloading and load balancing that is provided from services like AWS ALB, you could make use of a setup that implements HAProxy as an alternative. HAProxy will loadbalance and provide SSL offloading. Traefik does have this capability as well as integrations for LetsEncrypt SSL certs (good service if you want free SSL) however, you would still have to load balance between each of your Traefik nodes (assuming you want more than one). Note that if you go down the Traefik route with LetsEncrypt, you will need to also implement a shared key store between the nodes (i.e. Consul). An example of a HAProxy setup is available with the Vagrant config (see bellow).
+
+## Vagrant
+
+If you wish to try this setup with Vagrant the following steps can be used to get up and running fast. Be sure to reference the alternative hosts file when launching the ansible playbook as noted below. This hosts file defines some minor changes to the configuration that is unique to Vagrant.
+
+```bash
+vagrant up
+ansible-playbook --inventory-file=hosts-vagrant playbooks/install.yml
+```
+
+Note this setup also implements a HAProxy as a loadbalancer to distribute traffic between each of the docker Traefik router services. Within the Vagrant config the HAProxy service is running at 10.10.10.10 so the above hosts / dns file can be used here as well.
+
+Additionally, HAProxy exposes a stats page that is accessible at:
+
+http://10.10.10.10.10/stats
+
+To shut down the infrastructure in Vagrant run:
+
+```bash
+vagrant halt
+```
+
+To tear down all the infrastructure in Vagrant run:
+
+```bash
+vagrant destroy -f
+```

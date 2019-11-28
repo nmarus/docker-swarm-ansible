@@ -32,6 +32,13 @@
   pip:
     name: jsondiff
 
+- name: Install pyyaml Python library
+  when: inventory_hostname == groups['swarm_managers'][0]
+  become: true
+  become_method: sudo
+  pip:
+    name: pyyaml
+
 - name: Deploy stack from a compose file (on first swarm node)
   when: inventory_hostname == groups['swarm_managers'][0]
   docker_stack:

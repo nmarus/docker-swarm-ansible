@@ -53,6 +53,7 @@
       - gnupg-agent
       - software-properties-common
       - python-pip
+      - python3-pip
       - apache2-utils
     state: present
     force_apt_get: true
