@@ -41,5 +41,10 @@
   when: glustervolume.stat.exists == false and inventory_hostname == groups['gluster_nodes'][0]
   become: true
   become_method: sudo
-  ignore_errors: true
   shell: gluster volume start {{gluster_volume_name}}
+
+- name: Wait 60s for Gluster volume to be replicated
+  when: glustervolume.stat.exists == false and inventory_hostname == groups['gluster_nodes'][0]
+  become: true
+  become_method: sudo
+  shell: sleep 60
