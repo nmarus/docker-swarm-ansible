@@ -31,7 +31,7 @@ services:
     deploy:
       labels:
         - "traefik.enable=true"
-        - "traefik.http.routers.portainer.rule=Host(`{{portainer_admin_url}}`)"
+        - "traefik.http.routers.portainer.rule=Host(`{{portainer_app_name}}.{{app_domain_name}}`)"
         - "traefik.http.services.portainer.loadbalancer.server.port={{portainer_admin_port}}"
         - "traefik.docker.network={{traefik_network_name}}"
       mode: replicated

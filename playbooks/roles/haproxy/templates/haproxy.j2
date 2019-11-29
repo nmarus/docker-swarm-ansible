@@ -23,9 +23,12 @@ defaults
   log global
   mode http
   option dontlognull
+  option forwardfor
+
   timeout connect 5000
   timeout client  50000
   timeout server  50000
+
   errorfile 400 /etc/haproxy/errors/400.http
   errorfile 403 /etc/haproxy/errors/403.http
   errorfile 408 /etc/haproxy/errors/408.http
@@ -34,18 +37,35 @@ defaults
   errorfile 503 /etc/haproxy/errors/503.http
   errorfile 504 /etc/haproxy/errors/504.http
 
-listen http_service
-  bind *:80
-  mode http
-  option tcp-check
   stats enable
   stats hide-version
   stats refresh 30s
   stats show-node
-  stats auth {{haproxy_stats_user}}:{{haproxy_stats_password}}
-  stats admin if TRUE
   stats uri /stats
+  stats realm Haproxy\ Statistics
+  stats auth {{haproxy_stats_user}}:{{haproxy_stats_password}}
+
+frontend http-in
+  bind *:80
+  mode http
+  reqadd X-Forwarded-Proto:\ http
+
+  # uncomment to redirect http connects to https
+  #redirect scheme https
+
+  default_backend docker_swarm_layer7
+
+frontend https_in
+  bind *:443 ssl crt /etc/ssl/{{app_domain_name}}/{{app_domain_name}}.pem
+  mode http
+  reqadd X-Forwarded-Proto:\ https
+  default_backend docker_swarm_layer7
+
+backend docker_swarm_layer7
+  mode http
   balance source
-  server docker01 {{groups['swarm_managers'][0]}}:80 check
-  server docker02 {{groups['swarm_managers'][1]}}:80 check
-  server docker03 {{groups['swarm_managers'][2]}}:80 check
+  option tcp-check
+  option log-health-checks
+  server host01 {{groups['swarm_managers'][0]}}:80 check port 80
+  server host02 {{groups['swarm_managers'][1]}}:80 check port 80
+  server host03 {{groups['swarm_managers'][2]}}:80 check port 80

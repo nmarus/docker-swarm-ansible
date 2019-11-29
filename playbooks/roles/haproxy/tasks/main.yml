@@ -9,6 +9,19 @@
     force_apt_get: true
     update_cache: yes
 
+- name: Copy cert generation script to host
+  become: true
+  become_method: sudo
+  template:
+    src: generate_certs.j2
+    dest: /tmp/generate_certs.sh
+    mode: '0755'
+
+- name: Run cert generation script
+  become: true
+  become_method: sudo
+  shell: /tmp/generate_certs.sh
+
 - name: Create HAProxy config file
   become: true
   become_method: sudo
