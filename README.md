@@ -132,7 +132,7 @@ The following high level actions are performed by the Ansible script:
 * Install [Portainer](https://www.portainer.io) Agents as a global service on all `[swarm_managers]` and `[swarm_workers]`
 * Install Portainer UI with a replica set of 1 on `[swarm_managers]`
 * Install HAProxy on dedicated node
-* Creates a self signed certificate for SLS offloading with HA Proxy
+* Creates a self signed certificate for SSL offloading with HA Proxy
 * Routes traffic received on port 80 and 443 to the Traefic Services running on the Swarm manager Nodes.
 
 ### Setup DNS
