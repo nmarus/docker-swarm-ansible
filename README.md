@@ -1,31 +1,16 @@
-# Docker Swarm with GlusterFS, Traefik, and Portainer
+# Docker Swarm with GlusterFS, Traefik, HAProxy, and Portainer
 
 The goal of this repo is to demonstrate using Ansible to build out Docker Swarm architecture that can be used to simply and reliably deploy and manage container workloads. This setup is intended for a small Development Lab and to get familiar with how high availability, scaling, and routing works with Docker. This can be scaled to use in production and there are some notes at the end of this README that will point you in the right direction if you desire to do so.
 
-This setup will provide a 3 node Docker Swarm with Layer 7 routing, Web UI management, and a distributed file system for Container volumes.
-
-### Deployment Requirements
-
-This makes use of Ansible to automate the deployment of this setup. To run the Ansible commands, your workstation should have the Ansible CLI utilities installed.
-
-### Host Requirements (Default setup)
-
-This has been tested with Ubuntu 18.04, but should* work with any Debian flavor of linux.
-
-* 3 Hosts running Ubuntu 18.04
-* Primary User of 'ubuntu' with password 'ubuntu' (modifiable in hosts definition)
-* SSH Service available that above credentials can log in to
-* The 'ubuntu' user should have access to run `sudo`
-* Each host should have (minimum):
-  * 1 Core (Recommended 2 Core)
-  * 1 GB Ram (Recommended 2GB+)
-  * Primary drive of 20GB where OS is installed
-  * Secondary non-initialized 10GB+ Drive (will be used for XFS file system and Gluster Volumes)
+This setup will provide a 3 node Docker Swarm with Layer 7 routing, Web UI management, and a distributed file system for Container volumes. A HAProxy node is setup to load balance traffic between each of the Layer 7 routers on the Docker Swarm nodes.
 
 ### Technologies in Use
 
-#### Docker Swarm
+#### Docker
 Containers, nuff said.
+
+#### Docker Swarm
+Uses Docker to create a swarm of Docker hosts where you can deploy application services. A Swarm is managed like a single Docker node and allows service networks to span across multiple hosts.
 
 #### Gluster
 Gluster is a Distributed Filesystem to allow shared persistent storage volumes across Docker Swarm Cluster. This is used as an alternative to NFS or other shared storage technologies for simplicity and minimal hardware footprint. This example will install the Gluster Storage Plugin for Docker.
@@ -36,13 +21,106 @@ Traefik is a Layer 7 Router that automatically discovers services in Docker Swar
 #### Portainer
 Portainer is a web UI for managing Docker Swarm. Functionality is similar to Docker EE UCP but provides more features and is an open source project.
 
-## Deployment Overview
+#### HAProxy
+HAProxy is a load balancer and SSL off loader. This is typically placed in front of the application servers in a Cluster. In this setup, HAProxy does SSL Offloading and load balances requests to each of the Traefik services running on the Docker Swarm nodes. It additionally monitors each of the hosts and if one is no longer available, will remove that host from the distribution of traffic until it is brought back online.
+
+## Deployment
+
+### Requirements
+
+**Setup Ansible**
+
+This makes use of Ansible to automate the deployment of this setup. To run the Ansible commands, your workstation should have the Ansible CLI utilities installed.
+
+_For OSX with Homebrew:_
+
+```bash
+brew install ansible
+```
+
+**Setup Vagrant**
+
+If wanting to utilize Vagrant, you will need to make Vagrant and Virtualbox are both installed.
+
+_For OSX with Homebrew:_
+
+```bash
+brew cask install vagrant
+brew cask install virtualbox
+```
+
+### Setup Machines to Host the Swarm Cluster
+
+#### Vagrant
+
+If you wish to try this setup with Vagrant the following steps can be used to get up and running fast. The Vagrant file deploys 4 hosts.
+
+* 1 HAParoxy Host
+* 3 Docker Swarm Hosts
+
+To bring up the infrastructure, run:
+
+```bash
+# install disk resize plugin
+vagrant plugin install vagrant-disksize
+
+# launch vagrant environment
+vagrant up
+```
+
+To shut down the infrastructure in Vagrant, run:
+
+```bash
+vagrant halt
+```
+
+To tear down all the infrastructure in Vagrant, run:
+
+```bash
+vagrant destroy -f
+```
+
+#### External Hosts or Manual Setup
+
+If wanting to deploy on your own defined infrastructure you will need to provision 4 hosts (ie, VMWare Fusion / Workstation / ESXi / AWS / etc...)
+
+This has been tested with Ubuntu 18.04, but should* work with any Debian flavor of linux.
+
+* 4 Hosts running Ubuntu 18.04
+* Primary User of 'ubuntu' with password 'ubuntu' (modifiable in hosts definition)
+* SSH Service available that above credentials can log in to
+* The 'ubuntu' user should have access to run `sudo`
+* Each host should have:
+  * 1 Core
+  * 1 GB Ram
+  * Primary drive of 20GB where OS is installed
+* The 3 Docker Swarm hosts should also have a econdary non-initialized 10GB+ Drive. This will be used for XFS file system and Gluster Volumes.
+
+## Initialize Infrastructure
+
+Ansible is used to provision the infrastructure.
+
+All customizations are found in the Ansible Inventory that is defined in the files:
+
+* `hosts` - Inventory of hosts
+* `local-env.yml` - Options for deploying to manually configured Ubuntu hosts
+* `vagrant-env.yml` - Options for deploying when using Vagrant definition
+* `playbooks/config.yml` - Application config options
+
+Inventory Groups:
+
+* `[haproxy]` SINGLE node that will be configured as the front end load balancer with HAProxy
+* `[swarm_managers]` group in hosts MUST define at minimum 3 Nodes
+* `[swarm_workers]` group in hosts is optional and can include any number of non Manager Nodes
+* `[gluster_nodes]` group in host MUST define ONLY 3 Nodes
+
+### Deployment Overview
 
 The following high level actions are performed by the Ansible script:
 
 * Updates hosts packages
 * Installs required dependencies
-* Installs Docker CE on each node
+* Installs Docker CE on swarm nodes
 * Sets up Ansible user to have permission to run Docker without sudo access
 * The first node defined in `[swarm_managers]` is setup as the leader in the Swarm Cluster
 * The remaining nodes are setup as Swarm Managers (3 required for clustering, ie 1 Leader, 2 managers)
@@ -53,27 +131,17 @@ The following high level actions are performed by the Ansible script:
 * Installs [Traefik](https://traefik.io) stack as a global Service on all `[swarm_managers]`
 * Install [Portainer](https://www.portainer.io) Agents as a global service on all `[swarm_managers]` and `[swarm_workers]`
 * Install Portainer UI with a replica set of 1 on `[swarm_managers]`
+* Install HAProxy on dedicated node
+* Creates a self signed certificate for SLS offloading with HA Proxy
+* Routes traffic received on port 80 and 443 to the Traefic Services running on the Swarm manager Nodes.
 
+### Setup DNS
 
-## Setup
+For the Layer 7 routing to work, the DNS names must be used when accessing the apps through HAProxy and in turn, the Traefik Layer 7 Router.
 
-### Ansible
+Each of the deployed applications must resolve to the host running HAProxy. You can accomplish this in one of two ways.
 
-All customizations are found in the Ansible Inventory that is defined in the `hosts` and `config.yml` files for this project. Change the hosts / IPs addresses for the 3 nodes and this setup works as is.
-
-Notes about inventory file (hosts):
-
-* `[swarm_managers]` group in hosts MUST define at minimum 3 Nodes
-* `[swarm_workers]` group in hosts is optional and can include any number of non Manager Nodes
-* `[gluster_nodes]` group in host MUST define ONLY 3 Nodes
-
-### DNS
-
-For the Layer 7 routing to work, the DNS names must be used when accessing the apps through the Traefik Layer 7 Router.
-
-Each of the deployed applications must resolve to 1 or more of the Hosts running Traefik. You can accomplish this in one of two ways.
-
-1. DNS - If you a local DNS server, or are deploying into a public cloud, create a DNS entry that points to the Hosts.
+1. DNS - If you a local DNS server, or are deploying into a public cloud, create a DNS entry that points to the HAProxy Host.
 
 2. Local Dev via Hosts File - If you are testing on a local network or in a dev environment, it may be easier to simply modify your hosts file. Example entries below will match the default names defined in the variables of the Ansible hosts file.
 
@@ -85,35 +153,63 @@ Each of the deployed applications must resolve to 1 or more of the Hosts running
 10.10.10.10 wordpress.docker.local
 ```
 
-## Test Connectivity to Hosts
+### Test Connectivity to Hosts
 
 This should return ok and ensure that Ansible config is able to login and execute commands on the hosts.
+
+**For Vagrant Infrastructure**
+
+```bash
+ansible all --inventory-file=hosts-vagrant -a "/bin/echo hello"
+```
+
+**For External Hosts or Manual Setup on Ubuntu 18.04**
 
 ```bash
 ansible all -a "/bin/echo hello"
 ```
 
-## Run Playbook
+### Run Ansible Playbook
 
 Once everything is configured and verified, run the playbook to configure the clusters.
+
+**For Vagrant Infrastructure**
+
+```bash
+ansible-playbook --inventory-file=hosts-vagrant playbooks/install.yml
+```
+
+**For External Hosts or Manual Setup on Ubuntu 18.04**
 
 ```bash
 ansible-playbook playbooks/install.yml
 ```
 
-## Test Connectivity to Traefik
+### Test Connectivity to Traefik
 
 If using the default Ansible variables defined in the hosts file, you can navigate to:
 
 * http://traefik.docker.local
 
-## Test Connectivity to Portainer
+Username/Password = admin:password1234
+
+### Test Connectivity to Portainer
 
 If using the default Ansible variables defined in the hosts file, you can navigate to:
 
 * http://portainer.docker.local
 
-## Test Deploying a Simple Application Stack to the Swarm
+Username/Password = admin:password1234
+
+### Test Connectivity to HAPRoxy Status Page
+
+If using the default Ansible variables defined in the hosts file, you can navigate to:
+
+* http://10.10.10.10/stats
+
+Username/Password = admin:password1234
+
+### Test Deploying a Simple Application Stack to the Swarm
 
 **wordpress-stack.yml**
 
@@ -357,37 +453,6 @@ While Gluster is a good way to have a distributed filesystem for use with Swarm,
 
 For high traffic sites, you will also want to break out the Traefic router to run on dedicated hosts. This is out of the scope of this Ansible playbook, but should be fairly easy to modify. An option would be to setup 2 dedicated Swarm Workers and deploy Traefik services only to those. However, to keep other workloads off these workers, or to make sure Traefik services are only assigned here, you will have to make use of Docker labels and constraints.
 
-If running in environments where you do not have access to inherent SSL offloading and load balancing that is provided from services like AWS ALB, you could make use of a setup that implements HAProxy as an alternative. HAProxy will loadbalance and provide SSL offloading. Traefik does have this capability as well as integrations for LetsEncrypt SSL certs (good service if you want free SSL) however, you would still have to load balance between each of your Traefik nodes (assuming you want more than one). Note that if you go down the Traefik route with LetsEncrypt, you will need to also implement a shared key store between the nodes (i.e. Consul). An example of a HAProxy setup is available with the Vagrant config (see bellow).
+If running in environments where you do not have access to inherent SSL offloading and load balancing that is provided from services like AWS ALB, you could make use of a setup that implements HAProxy as an alternative. A simple example of this is provided with this setup.
 
-## Vagrant
-
-If you wish to try this setup with Vagrant the following steps can be used to get up and running fast. Be sure to reference the alternative hosts file when launching the ansible playbook as noted below. This hosts file defines some minor changes to the configuration that is unique to Vagrant.
-
-```bash
-# install disk resize plugin
-vagrant plugin install vagrant-disksize
-
-# launch vagrant environment
-vagrant up
-
-# run ansible scripts on vagrant vms
-ansible-playbook --inventory-file=hosts-vagrant playbooks/install.yml
-```
-
-Note this setup also implements a HAProxy as a loadbalancer to distribute traffic between each of the docker Traefik router services. Within the Vagrant config the HAProxy service is running at 10.10.10.10 so the above hosts / dns file can be used here as well.
-
-Additionally, HAProxy exposes a stats page that is accessible at:
-
-http://10.10.10.10/stats
-
-To shut down the infrastructure in Vagrant run:
-
-```bash
-vagrant halt
-```
-
-To tear down all the infrastructure in Vagrant run:
-
-```bash
-vagrant destroy -f
-```
+Traefik also has this capability as integrations for LetsEncrypt SSL certs (good service if you want free SSL) however, you would still have to load balance between each of your Traefik nodes (assuming you want more than one). Note that if you go down the Traefik route with LetsEncrypt, you will need to also implement a shared key store between the nodes (i.e. Consul).

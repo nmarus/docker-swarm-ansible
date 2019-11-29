@@ -1,12 +1,15 @@
-[swarm_managers]
+[haproxy]
 10.10.10.10
+
+[swarm_managers]
 10.10.10.20
 10.10.10.30
+10.10.10.40
 
 [gluster_nodes]
-10.10.10.10
 10.10.10.20
 10.10.10.30
+10.10.10.40
 
 [all:vars]
 ansible_connection=ssh
