@@ -103,8 +103,7 @@ Ansible is used to provision the infrastructure.
 All customizations are found in the Ansible Inventory that is defined in the files:
 
 * `hosts` - Inventory of hosts
-* `local-env.yml` - Options for deploying to manually configured Ubuntu hosts
-* `vagrant-env.yml` - Options for deploying when using Vagrant definition
+* `host-vagrant` - Inventory of hosts for vagrant setup
 * `playbooks/config.yml` - Application config options
 
 Inventory Groups:
