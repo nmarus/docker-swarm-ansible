@@ -364,7 +364,13 @@ If running in environments where you do not have access to inherent SSL offloadi
 If you wish to try this setup with Vagrant the following steps can be used to get up and running fast. Be sure to reference the alternative hosts file when launching the ansible playbook as noted below. This hosts file defines some minor changes to the configuration that is unique to Vagrant.
 
 ```bash
+# install disk resize plugin
+vagrant plugin install vagrant-disksize
+
+# launch vagrant environment
 vagrant up
+
+# run ansible scripts on vagrant vms
 ansible-playbook --inventory-file=hosts-vagrant playbooks/install.yml
 ```
 
